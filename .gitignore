@@ -45,7 +45,10 @@ dist/
 *.app
 *.dmg
 
-# Test outputs
+# Test outputs and sample data
 test_output/
 *.pdf
+*Resume*.txt
+*Resume*.pdf
+Data Resume*.txt
 
