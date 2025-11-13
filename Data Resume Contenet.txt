@@ -1,0 +1,59 @@
+SNEHIT VADDI
+San Francisco, CA | (470) 344-4882 | vaddisnehitdata@gmail.com
+linkedin.com/in/snehitvaddi | github.com/snehitvaddi
+
+SENIOR DATA ENGINEER | CLOUD & DATA MODELING SPECIALIST
+Scalable Data Systems • Dimensional Modeling • Cost-Optimized Pipelines
+
+---
+
+### TECHNICAL PROJECTS
+
+**Real-Time Job Market Intelligence**  
+- Built Azure pipeline ingesting 10K+ daily job postings via Event Hubs, reducing storage costs by 60% with Delta Lake optimizations  
+- Implemented NLP-powered skills taxonomy (spaCy) to track emerging tech trends across 50+ companies  
+
+**IoT Anomaly Detection System**  
+- Designed real-time alert system processing 1M+ sensor readings/day using Spark Streaming + Isolation Forest (F1-score: 0.89)  
+- Reduced false alerts by 45% through dynamic thresholding and adaptive windowing  
+
+**Data Warehouse Modernization**  
+- Migrated legacy SQL Server DW to Azure Synapse, improving query performance by 3x via star schema optimization  
+- Automated metadata management with Purview, enabling column-level lineage for 200+ tables  
+
+---
+
+### PROFESSIONAL EXPERIENCE  
+
+**AT&T (via Accenture) | Data Engineer**  
+- Migrated Hadoop to Azure, processing 1M+ records/day with Spark, reducing ETL time by 40% ($2M annual savings)  
+- Built Delta Lake architecture with partitioning strategies, cutting query latency by 50% for analytics dashboards  
+- Developed real-time IoT platform (Kafka + Spark Streaming) processing 50K+ events/sec for Power BI dashboards  
+- Implemented CI/CD pipelines (Terraform + Azure DevOps), slashing deployment cycles from weeks to days  
+- Designed star schema models for telecom analytics, optimizing fact tables (100M+ rows/day) for 3x query gains  
+- Redesigned OLTP schema (PostgreSQL), reducing storage by 40% while improving join performance  
+- Automated data quality checks (Great Expectations), reducing incidents by 85% and ensuring HIPAA compliance  
+
+**University of Florida | Graduate Research Assistant**  
+- Migrated 15+ ETL workflows to Azure (Data Factory + Databricks), reducing batch processing time by 40%  
+- Built Kafka pipelines for 50K+ sensor events/sec, enabling real-time dashboards with <5s latency  
+- Automated data validation (Python UDFs), cutting data incidents by 85% and ensuring compliance  
+- Implemented Delta Lake for versioned data, enabling time-travel queries for research reproducibility  
+- Developed skills taxonomy (NLP) to analyze 10K+ job postings, identifying emerging tech trends  
+- Optimized Spark joins for genomics data, reducing runtime by 30% for large-scale analyses  
+- Deployed CI/CD (Azure DevOps), reducing deployment cycles from weeks to days with Terraform IaC  
+
+---
+
+### TECHNICAL SKILLS  
+**Big Data:** Spark, Kafka, Flink, Delta Lake, Hudi  
+**Cloud:** AWS (Redshift, Glue, EMR), Azure (Databricks, Synapse, Data Factory)  
+**Data Modeling:** Star/Snowflake schemas, SCD Type 2, Kimball methodology  
+**Languages:** Python, SQL, Scala  
+**Tools:** Git, Docker, Airflow, Great Expectations  
+
+---
+
+### EDUCATION  
+**University of Florida** | MS in Computer Science | GPA: 3.8/4.0  
+**Relevant Coursework:** Distributed Systems, Data Mining, Cloud Computing  

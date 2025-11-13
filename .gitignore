@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Environment variables
+.env
+.env.local
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Output files
+*.tex
+!templates/*.tex
+updated_resume.tex
+*_resume.tex
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build and distribution
+build/
+dist/
+*.spec
+*.exe
+*.app
+*.dmg
+
+# Test outputs
+test_output/
+*.pdf
+
