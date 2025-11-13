@@ -3,51 +3,76 @@ Build script to create executable from Streamlit app
 Uses PyInstaller to package the application
 """
 
-import PyInstaller.__main__
+import subprocess
+import sys
 import os
-import shutil
 from pathlib import Path
 
 def build_executable():
     """Build executable using PyInstaller"""
     
-    print("🔨 Building executable...")
-    print("This may take a few minutes...")
+    print("🔨 Building Resume Updater executable...")
+    print("This may take 5-10 minutes...")
+    print()
     
-    # PyInstaller options
-    args = [
-        'streamlit_app.py',
-        '--name=ResumeUpdater',
-        '--onefile',
-        '--windowed',  # No console window (use --console if you want console)
-        '--icon=NONE',  # Add icon path if you have one
-        '--add-data=README.md;.',
-        '--add-data=QUICK_START.md;.',
-        '--hidden-import=streamlit',
-        '--hidden-import=openai',
-        '--hidden-import=google.generativeai',
-        '--hidden-import=pdfplumber',
-        '--hidden-import=subprocess',
-        '--hidden-import=tempfile',
-        '--collect-all=streamlit',
-        '--collect-all=streamlit.web',
-        '--collect-all=streamlit.runtime',
-        '--noconfirm',
-        '--clean'
-    ]
+    # Check if PyInstaller is installed
+    try:
+        import PyInstaller
+        print("✅ PyInstaller found")
+    except ImportError:
+        print("❌ PyInstaller not found. Installing...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller"])
+        print("✅ PyInstaller installed")
+    
+    # Use spec file if it exists, otherwise use command line
+    spec_file = Path("build_exe.spec")
+    
+    if spec_file.exists():
+        print("📋 Using build_exe.spec configuration...")
+        cmd = ["pyinstaller", "--clean", "--noconfirm", "build_exe.spec"]
+    else:
+        print("📋 Using default PyInstaller configuration...")
+        cmd = [
+            "pyinstaller",
+            "--name=ResumeUpdater",
+            "--onefile",
+            "--console",  # Show console for Streamlit (helps with debugging)
+            "--add-data=README.md;.",
+            "--add-data=QUICK_START.md;.",
+            "--hidden-import=streamlit",
+            "--hidden-import=streamlit.web",
+            "--hidden-import=streamlit.runtime",
+            "--hidden-import=openai",
+            "--hidden-import=google.generativeai",
+            "--hidden-import=pdfplumber",
+            "--collect-all=streamlit",
+            "--noconfirm",
+            "--clean",
+            "streamlit_app.py"
+        ]
     
     try:
-        PyInstaller.__main__.run(args)
-        print("\n✅ Build complete!")
+        result = subprocess.run(cmd, check=True)
+        print("\n" + "="*60)
+        print("✅ Build complete!")
+        print("="*60)
         print(f"📦 Executable location: dist/ResumeUpdater.exe")
-        print("\n⚠️  Note: The executable will be large (~200-300MB) as it includes Python and all dependencies.")
+        print(f"📊 Size: ~200-300MB (includes Python + all dependencies)")
+        print("\n💡 To run: Double-click ResumeUpdater.exe")
+        print("\n⚠️  Note: First run may trigger Windows Defender warning.")
+        print("   This is normal for unsigned executables.")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"\n❌ Build failed with error code: {e.returncode}")
+        print("\nTroubleshooting:")
+        print("1. Make sure all dependencies are installed: pip install -r requirements.txt")
+        print("2. Try running: pyinstaller --version")
+        return False
     except Exception as e:
         print(f"\n❌ Build failed: {str(e)}")
-        print("\nMake sure PyInstaller is installed: pip install pyinstaller")
         return False
-    
-    return True
 
 if __name__ == "__main__":
-    build_executable()
+    success = build_executable()
+    sys.exit(0 if success else 1)
 
