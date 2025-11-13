@@ -131,6 +131,10 @@ STEP 4: STRUCTURE REQUIREMENTS
   * Each role must have 4-6 bullet points describing achievements
   * Focus on impact, results, and skills relevant to the job description
   * Use action verbs (Led, Built, Implemented, Optimized, etc.)
+  * Bullet formatting rules:
+    - The first bullet must summarize the overall scope and impact (team size, domain, tools, outcomes)
+    - Each bullet must be a single concise line that fits on an A4 sheet at 12pt font
+    - Use simple bullet markers (e.g., "- ") with no bolding or additional headings
 - Technical Projects: Include ALL projects with detailed descriptions (3-4 bullet points each)
 - Technical Skills: Comprehensive list matching job requirements (grouped by category)
 - Education: Complete education section with degrees, institutions, dates, GPA if mentioned
