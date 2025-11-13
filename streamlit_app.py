@@ -93,8 +93,6 @@ def initialize_session_state():
         st.session_state.processing_followup = False
     if 'transformed_content' not in st.session_state:
         st.session_state.transformed_content = None
-    if 'followup_feedback' not in st.session_state:
-        st.session_state.followup_feedback = ""
 
 
 def extract_text_from_uploaded_file(uploaded_file):
@@ -437,7 +435,6 @@ def main():
         feedback_disabled = remaining <= 0
         feedback = st.text_area(
             "Tell the assistant what to change (tone, emphasis, missing details, etc.)",
-            key="followup_feedback",
             height=160,
             disabled=feedback_disabled
         )
@@ -476,7 +473,6 @@ def main():
                         st.session_state.conversation = new_conversation
                         st.session_state.followups_used += 1
                         st.session_state.processing_followup = False
-                        st.session_state.followup_feedback = ""
                         
                         st.success("✅ Follow-up applied! Updated resume is ready below.")
                 except Exception as e:
