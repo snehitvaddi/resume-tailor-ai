@@ -85,6 +85,18 @@ def initialize_session_state():
         st.session_state.latex_output = None
     if 'pdf_path' not in st.session_state:
         st.session_state.pdf_path = None
+    if 'conversation' not in st.session_state:
+        st.session_state.conversation = None
+    if 'followups_used' not in st.session_state:
+        st.session_state.followups_used = 0
+    if 'max_followups' not in st.session_state:
+        st.session_state.max_followups = 5
+    if 'processing_followup' not in st.session_state:
+        st.session_state.processing_followup = False
+    if 'transformed_content' not in st.session_state:
+        st.session_state.transformed_content = None
+    if 'followup_feedback' not in st.session_state:
+        st.session_state.followup_feedback = ""
 
 
 def extract_text_from_uploaded_file(uploaded_file):
@@ -331,10 +343,16 @@ def main():
             status_text.text("Step 2/5: Transforming resume content to match job description... (30-60 seconds)")
             progress_bar.progress(40)
             
-            transformed_content = llm_service.transform_resume_content(
+            transformed_content, conversation_history = llm_service.transform_resume_with_history(
                 st.session_state.resume_text,
                 st.session_state.job_description
             )
+            st.session_state.transformed_content = transformed_content
+            st.session_state.conversation = conversation_history
+            st.session_state.followups_used = 0
+            st.session_state.max_followups = 5
+            st.session_state.provider = provider
+            st.session_state.api_key = api_key
             
             status_text.text("Step 2/5: Resume content transformed ✅")
             progress_bar.progress(60)
@@ -425,14 +443,112 @@ def main():
             with st.expander("📋 Preview Transformed Resume Content"):
                 st.text(transformed_content)
             
+            if st.session_state.latex_output:
+                with st.expander("📐 Preview LaTeX Output"):
+                    st.code(st.session_state.latex_output, language="latex")
+            
             # Cleanup
             st.session_state.processing = False
+            st.session_state.processing_followup = False
             
         except Exception as e:
             st.error(f"❌ Error during processing: {str(e)}")
             st.session_state.processing = False
+            st.session_state.processing_followup = False
             progress_bar.empty()
             status_text.empty()
+
+    # Follow-up refinement interface
+    if st.session_state.transformed_content:
+        st.markdown("---")
+        st.subheader("🔁 Refine with Follow-Up Feedback")
+        
+        remaining = st.session_state.max_followups - st.session_state.followups_used
+        st.caption(f"Follow-ups remaining: {remaining} / {st.session_state.max_followups}")
+        
+        feedback_disabled = remaining <= 0
+        feedback = st.text_area(
+            "Tell the assistant what to change (tone, emphasis, missing details, etc.)",
+            key="followup_feedback",
+            height=160,
+            disabled=feedback_disabled
+        )
+        
+        apply_button = st.button(
+            "✏️ Apply Feedback",
+            key="apply_feedback_button",
+            use_container_width=True,
+            disabled=feedback_disabled or st.session_state.processing_followup
+        )
+        
+        if feedback_disabled:
+            st.info("You've reached the maximum number of follow-ups for this session (5).")
+        
+        if apply_button:
+            if not feedback.strip():
+                st.warning("Please enter specific feedback before applying.")
+            else:
+                st.session_state.processing_followup = True
+                try:
+                    with st.spinner("Applying feedback and updating resume..."):
+                        llm_service = LLMService(provider=st.session_state.provider, api_key=st.session_state.api_key)
+                        new_content, new_conversation = llm_service.refine_with_feedback(
+                            st.session_state.conversation,
+                            feedback
+                        )
+                        
+                        latex_generator = LaTeXGenerator()
+                        latex_template = latex_generator.get_default_template()
+                        final_latex = llm_service.format_to_latex(new_content, latex_template)
+                        
+                        with tempfile.NamedTemporaryFile(mode='w', suffix='.tex', delete=False, encoding='utf-8') as tmp_tex:
+                            tmp_tex.write(final_latex)
+                            tmp_tex_path = tmp_tex.name
+                        
+                        success, pdf_path = latex_generator.compile_to_pdf(tmp_tex_path, cleanup=False)
+                        if success and pdf_path:
+                            st.session_state.pdf_path = str(pdf_path)
+                        
+                        st.session_state.transformed_content = new_content
+                        st.session_state.latex_output = final_latex
+                        st.session_state.conversation = new_conversation
+                        st.session_state.followups_used += 1
+                        st.session_state.processing_followup = False
+                        st.session_state.followup_feedback = ""
+                        
+                        st.success("✅ Follow-up applied! Updated resume is ready below.")
+                except Exception as e:
+                    st.session_state.processing_followup = False
+                    st.error(f"❌ Follow-up failed: {str(e)}")
+        
+        # Show latest outputs
+        with st.expander("📋 Latest Resume Content", expanded=False):
+            st.text(st.session_state.transformed_content)
+        
+        if st.session_state.latex_output:
+            with st.expander("📐 Latest LaTeX Output", expanded=False):
+                st.code(st.session_state.latex_output, language="latex")
+        
+        download_col1, download_col2 = st.columns(2)
+        with download_col1:
+            if st.session_state.latex_output:
+                st.download_button(
+                    label="📝 Download Updated LaTeX",
+                    data=st.session_state.latex_output,
+                    file_name="updated_resume.tex",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+        with download_col2:
+            if st.session_state.pdf_path and Path(st.session_state.pdf_path).exists():
+                with open(st.session_state.pdf_path, 'rb') as pdf_file:
+                    st.download_button(
+                        label="📄 Download Updated PDF",
+                        data=pdf_file.read(),
+                        file_name="updated_resume.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
 
 
 if __name__ == "__main__":

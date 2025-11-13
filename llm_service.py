@@ -4,7 +4,7 @@ Handles API calls to OpenAI, Google Gemini, or Groq for resume transformation
 """
 
 import os
-from typing import Optional
+from typing import Optional, List, Dict
 from openai import OpenAI
 import google.generativeai as genai
 
@@ -55,18 +55,48 @@ class LLMService:
             raise ValueError(f"Unsupported provider: {provider}. Use 'openai', 'gemini', or 'groq'")
     
     def transform_resume_content(self, resume_text: str, job_description: str) -> str:
+        """Backward-compatible method that returns only the transformed resume."""
+        response, _ = self.transform_resume_with_history(resume_text, job_description)
+        return response
+
+    def transform_resume_with_history(self, resume_text: str, job_description: str):
         """
-        Stage 1: Transform resume content to match job description
-        Uses sophisticated reasoning approach to rewrite complete resume
-        
-        Args:
-            resume_text: Original resume text
-            job_description: Job description text
-            
+        Transform resume and return conversation history for iterative refinement.
+
         Returns:
-            Transformed resume content
+            Tuple[str, List[Dict[str, str]]]: (transformed resume, conversation history)
         """
-        prompt = f"""You are an expert resume writer with deep analytical skills. Your task is to completely transform the resume to perfectly match the job description while maintaining authenticity and professionalism.
+        messages = self._build_initial_conversation(resume_text, job_description)
+        response = self._chat(messages, temperature=0.6, max_tokens=8000)
+        messages.append({"role": "assistant", "content": response})
+        return response, messages
+
+    def refine_with_feedback(self, conversation: List[Dict[str, str]], feedback: str):
+        """
+        Apply follow-up feedback to the existing conversation.
+
+        Args:
+            conversation: Chat message history returned by transform_resume_with_history/refine_with_feedback
+            feedback: User feedback text
+
+        Returns:
+            Tuple[str, List[Dict[str, str]]]: (updated resume, updated conversation history)
+        """
+        follow_up_prompt = (
+            "Follow-up feedback from the user:\n"
+            f"{feedback.strip()}\n\n"
+            "Please revise the ENTIRE resume accordingly. Keep all sections complete, maintain professional tone, "
+            "ensure every previous company/role/project remains represented with 4-6 bullet points per role, and "
+            "return the full updated resume text."
+        )
+        messages = [dict(m) for m in conversation]
+        messages.append({"role": "user", "content": follow_up_prompt})
+        response = self._chat(messages, temperature=0.6, max_tokens=8000)
+        messages.append({"role": "assistant", "content": response})
+        return response, messages
+
+    def _build_initial_conversation(self, resume_text: str, job_description: str) -> List[Dict[str, str]]:
+        base_prompt = f"""You are an expert resume writer with deep analytical skills. Your task is to completely transform the resume to perfectly match the job description while maintaining authenticity and professionalism.
 
 JOB DESCRIPTION:
 {job_description}
@@ -101,33 +131,24 @@ STEP 4: STRUCTURE REQUIREMENTS
   * Each role must have 4-6 bullet points describing achievements
   * Focus on impact, results, and skills relevant to the job description
   * Use action verbs (Led, Built, Implemented, Optimized, etc.)
-  
-- Technical Projects: Include ALL projects with detailed descriptions
-  * Each project: 3-4 bullet points explaining what was built and the impact
-  
-- Technical Skills: Comprehensive list matching job requirements
-  * Group by category (Languages, Frameworks, Tools, etc.)
-  
+- Technical Projects: Include ALL projects with detailed descriptions (3-4 bullet points each)
+- Technical Skills: Comprehensive list matching job requirements (grouped by category)
 - Education: Complete education section with degrees, institutions, dates, GPA if mentioned
 
 OUTPUT FORMAT:
-Return the COMPLETE transformed resume in plain text format with clear section headers:
-- Use "### PROFESSIONAL EXPERIENCE" for work experience
-- Use "### TECHNICAL PROJECTS" for projects
-- Use "### TECHNICAL SKILLS" for skills (Transform the following technical skills into a clean resume section using this format:
+- Header with name, contact info, location, email, LinkedIn, GitHub
+- Use \"### PROFESSIONAL EXPERIENCE\" for experience
+- Use \"### TECHNICAL PROJECTS\" for projects
+- Use \"### TECHNICAL SKILLS\" for skills (format like):
 
 ### TECHNICAL SKILLS
 
 **Category 1:** skill1, skill2, skill3  
 **Category 2:** skill4, skill5, skill6  
- )
-- Use "### EDUCATION" for education
-- Include header with name, contact info, location, email, LinkedIn, GitHub
 
-IMPORTANT: This must be a COMPLETE, PROFESSIONAL resume ready for job applications - not a sample or partial version. Include every detail from the original resume, transformed to match the job description."""
+- Use \"### EDUCATION\" for education
 
-        if self.provider == "openai":
-            enhanced_prompt = f"""{prompt}
+IMPORTANT: This must be a COMPLETE, PROFESSIONAL resume ready for job applications - not a sample or partial version.
 
 REASONING PROCESS - FOLLOW THESE STEPS:
 1. First, mentally extract ALL companies and roles from the resume - list them all
@@ -136,69 +157,19 @@ REASONING PROCESS - FOLLOW THESE STEPS:
 4. Ensure consistent professional tone throughout - friendly but not over-exaggerated
 5. Verify ALL sections are complete before finalizing - check that nothing is missing
 
-CRITICAL REMINDER: This is a REAL resume for a REAL job application. It must be:
-- COMPLETE: Include every company, every role, every project from the original
-- PROFESSIONAL: Ready to submit to employers
-- DETAILED: 4-6 bullet points per role, not just 2-3
-- AUTHENTIC: Based on real experiences, not fabricated"""
-            
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert resume writer specializing in ATS-optimized, storytelling resumes. You ALWAYS provide complete, professional resumes with ALL experiences included - never samples, never partial content, never just one company. Every resume you create is ready for real job applications."},
-                    {"role": "user", "content": enhanced_prompt}
-                ],
-                temperature=0.6,
-                max_tokens=8000
-            )
-            return response.choices[0].message.content.strip()
-        
-        elif self.provider == "gemini":
-            enhanced_prompt = f"""{prompt}
+CRITICAL REMINDER: This is a REAL resume for a REAL job application. It must be complete, professional, detailed, and authentic."""
 
-REASONING PROCESS - FOLLOW THESE STEPS:
-1. First, mentally extract ALL companies and roles from the resume - list them all
-2. For each role, identify 4-6 key achievements that match the job description
-3. Transform each bullet point to highlight relevant skills and results
-4. Ensure consistent professional tone throughout - friendly but not over-exaggerated
-5. Verify ALL sections are complete before finalizing - check that nothing is missing
-
-CRITICAL REMINDER: This is a REAL resume for a REAL job application. It must be:
-- COMPLETE: Include every company, every role, every project from the original
-- PROFESSIONAL: Ready to submit to employers
-- DETAILED: 4-6 bullet points per role, not just 2-3
-- AUTHENTIC: Based on real experiences, not fabricated"""
-            
-            response = self.model.generate_content(enhanced_prompt)
-            return response.text.strip()
-        
-        elif self.provider == "groq":
-            # Enhanced prompt with explicit reasoning instructions for complete resume generation
-            enhanced_prompt = f"""{prompt}
-
-REASONING PROCESS - FOLLOW THESE STEPS:
-1. First, mentally extract ALL companies and roles from the resume - list them all
-2. For each role, identify 4-6 key achievements that match the job description
-3. Transform each bullet point to highlight relevant skills and results
-4. Ensure consistent professional tone throughout - friendly but not over-exaggerated
-5. Verify ALL sections are complete before finalizing - check that nothing is missing
-
-CRITICAL REMINDER: This is a REAL resume for a REAL job application. It must be:
-- COMPLETE: Include every company, every role, every project from the original
-- PROFESSIONAL: Ready to submit to employers
-- DETAILED: 4-6 bullet points per role, not just 2-3
-- AUTHENTIC: Based on real experiences, not fabricated"""
-            
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert resume writer specializing in ATS-optimized, storytelling resumes. You ALWAYS provide complete, professional resumes with ALL experiences included - never samples, never partial content, never just one company. Every resume you create is ready for real job applications."},
-                    {"role": "user", "content": enhanced_prompt}
-                ],
-                temperature=0.6,  # Slightly lower for more consistent, complete output
-                max_tokens=8000  # Increased for complete resume generation
-            )
-            return response.choices[0].message.content.strip()
+        return [
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert resume writer specializing in ATS-optimized, storytelling resumes. "
+                    "You ALWAYS provide complete, professional resumes with ALL experiences included - never samples, "
+                    "never partial content. Every resume you create is ready for real job applications."
+                ),
+            },
+            {"role": "user", "content": base_prompt},
+        ]
     
     def format_to_latex(self, transformed_content: str, latex_template: str) -> str:
         """
@@ -231,31 +202,36 @@ INSTRUCTIONS:
 
 Return the complete LaTeX document ready to compile."""
 
-        if self.provider == "openai":
+        latex_messages = [
+            {
+                "role": "system",
+                "content": "You are a LaTeX formatting expert specializing in resume documents. Format the complete resume content into proper LaTeX structure.",
+            },
+            {"role": "user", "content": prompt},
+        ]
+        return self._chat(latex_messages, temperature=0.3, max_tokens=8000)
+
+    def _chat(self, messages: List[Dict[str, str]], temperature: float, max_tokens: int) -> str:
+        if self.provider in {"openai", "groq"}:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a LaTeX formatting expert specializing in resume documents. Format the complete resume content into proper LaTeX structure."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,  # Lower temperature for more consistent formatting
-                max_tokens=8000  # Increased for complete LaTeX document generation
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
             return response.choices[0].message.content.strip()
-        
         elif self.provider == "gemini":
-            response = self.model.generate_content(prompt)
+            prompt_text = self._messages_to_prompt(messages)
+            response = self.model.generate_content(prompt_text)
             return response.text.strip()
-        
-        elif self.provider == "groq":
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a LaTeX formatting expert specializing in resume documents. Format the complete resume content into proper LaTeX structure."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,  # Lower temperature for more consistent formatting
-                max_tokens=18000  # Increased for complete LaTeX document generation
-            )
-            return response.choices[0].message.content.strip()
+        else:
+            raise ValueError(f"Unsupported provider: {self.provider}")
+
+    def _messages_to_prompt(self, messages: List[Dict[str, str]]) -> str:
+        formatted = []
+        for message in messages:
+            role = message.get("role", "user").upper()
+            content = message.get("content", "")
+            formatted.append(f"{role}: {content}")
+        return "\n\n".join(formatted)
 

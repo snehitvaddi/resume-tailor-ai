@@ -12,6 +12,7 @@ Transform your resume to perfectly match any job description using AI-powered st
 - **📄 Automatic PDF Compilation**: Automatically compiles LaTeX to PDF using pdflatex
 - **⚙️ Flexible API Options**: Choose between OpenAI, Gemini, or Groq (auto-detects from API key)
 - **📊 Progress Tracking**: Real-time progress bars showing transformation stages
+- **🔁 Iterative Refinement**: Offer up to 5 follow-up feedback turns to fine-tune the resume
 
 ## 🚀 Quick Start
 
@@ -76,6 +77,7 @@ python build_exe.py
 3. **Enter API Key**: Sidebar - auto-detects provider
 4. **Click "Transform Resume"**: Wait 1-2 minutes
 5. **Download**: Get LaTeX (.tex) and PDF files
+6. **Refine (Optional)**: Provide follow-up feedback up to 5 times for additional tweaks
 
 ## 🛠️ Project Structure
 
