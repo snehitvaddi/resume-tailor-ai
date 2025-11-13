@@ -83,8 +83,6 @@ def initialize_session_state():
         st.session_state.processing = False
     if 'latex_output' not in st.session_state:
         st.session_state.latex_output = None
-    if 'pdf_path' not in st.session_state:
-        st.session_state.pdf_path = None
     if 'conversation' not in st.session_state:
         st.session_state.conversation = None
     if 'followups_used' not in st.session_state:
@@ -336,11 +334,11 @@ def main():
             status_text = st.empty()
             
             # Step 1: Extract text (already done, but show progress)
-            status_text.text("Step 1/5: Resume text extracted ✅")
+            status_text.text("Step 1/4: Resume text extracted ✅")
             progress_bar.progress(20)
             
             # Step 2: Transform resume content
-            status_text.text("Step 2/5: Transforming resume content to match job description... (30-60 seconds)")
+            status_text.text("Step 2/4: Transforming resume content to match job description... (30-60 seconds)")
             progress_bar.progress(40)
             
             transformed_content, conversation_history = llm_service.transform_resume_with_history(
@@ -354,26 +352,22 @@ def main():
             st.session_state.provider = provider
             st.session_state.api_key = api_key
             
-            status_text.text("Step 2/5: Resume content transformed ✅")
+            status_text.text("Step 2/4: Resume content transformed ✅")
             progress_bar.progress(60)
             
             # Step 3: Get LaTeX template
-            status_text.text("Step 3/5: Loading LaTeX template...")
+            status_text.text("Step 3/4: Loading LaTeX template...")
             progress_bar.progress(70)
             latex_template = latex_generator.get_default_template()
-            status_text.text("Step 3/5: LaTeX template loaded ✅")
-            progress_bar.progress(75)
-            
-            # Step 4: Format to LaTeX
-            status_text.text("Step 4/5: Formatting content into LaTeX structure... (30-60 seconds)")
+            status_text.text("Step 3/4: LaTeX template loaded ✅")
             progress_bar.progress(80)
             
-            final_latex = llm_service.format_to_latex(transformed_content, latex_template)
-            status_text.text("Step 4/5: Content formatted into LaTeX ✅")
+            # Step 4: Format to LaTeX
+            status_text.text("Step 4/4: Formatting content into LaTeX structure... (30-60 seconds)")
             progress_bar.progress(90)
             
-            # Step 5: Save LaTeX file
-            status_text.text("Step 5/5: Saving files...")
+            final_latex = llm_service.format_to_latex(transformed_content, latex_template)
+            status_text.text("Step 4/4: Content formatted into LaTeX ✅")
             progress_bar.progress(95)
             
             # Save LaTeX to temporary file
@@ -383,21 +377,6 @@ def main():
             
             st.session_state.latex_output = final_latex
             latex_file_path = Path(tmp_tex_path)
-            
-            # Step 6: Compile to PDF (optional)
-            pdf_path = None
-            try:
-                status_text.text("Step 6/6: Compiling LaTeX to PDF...")
-                progress_bar.progress(98)
-                
-                success, pdf_path = latex_generator.compile_to_pdf(tmp_tex_path, cleanup=False)
-                if success and pdf_path:
-                    st.session_state.pdf_path = str(pdf_path)
-                    status_text.text("Step 6/6: PDF generated successfully ✅")
-                else:
-                    status_text.text("Step 6/6: PDF compilation completed with warnings")
-            except Exception as pdf_error:
-                status_text.text(f"Step 6/6: PDF compilation skipped ({str(pdf_error)[:50]}...)")
             
             progress_bar.progress(100)
             status_text.text("✨ Transformation Complete!")
@@ -426,18 +405,7 @@ def main():
                 )
             
             with col_dl2:
-                # PDF download
-                if st.session_state.pdf_path and Path(st.session_state.pdf_path).exists():
-                    with open(st.session_state.pdf_path, 'rb') as pdf_file:
-                        st.download_button(
-                            label="📄 Download PDF",
-                            data=pdf_file.read(),
-                            file_name="updated_resume.pdf",
-                            mime="application/pdf",
-                            use_container_width=True
-                        )
-                else:
-                    st.info("PDF not available. LaTeX file can be compiled manually.")
+                st.info("To convert to PDF, run `pdflatex updated_resume.tex` (requires a LaTeX distribution).")
             
             # Preview section
             with st.expander("📋 Preview Transformed Resume Content"):
@@ -503,12 +471,6 @@ def main():
                         
                         with tempfile.NamedTemporaryFile(mode='w', suffix='.tex', delete=False, encoding='utf-8') as tmp_tex:
                             tmp_tex.write(final_latex)
-                            tmp_tex_path = tmp_tex.name
-                        
-                        success, pdf_path = latex_generator.compile_to_pdf(tmp_tex_path, cleanup=False)
-                        if success and pdf_path:
-                            st.session_state.pdf_path = str(pdf_path)
-                        
                         st.session_state.transformed_content = new_content
                         st.session_state.latex_output = final_latex
                         st.session_state.conversation = new_conversation
@@ -540,15 +502,7 @@ def main():
                     use_container_width=True
                 )
         with download_col2:
-            if st.session_state.pdf_path and Path(st.session_state.pdf_path).exists():
-                with open(st.session_state.pdf_path, 'rb') as pdf_file:
-                    st.download_button(
-                        label="📄 Download Updated PDF",
-                        data=pdf_file.read(),
-                        file_name="updated_resume.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
+            st.info("To convert to PDF, run `pdflatex updated_resume.tex` (requires LaTeX distribution).")
 
 
 if __name__ == "__main__":

@@ -26,7 +26,7 @@ class ResumeUpdater:
         self.llm_service = LLMService(provider=llm_provider, api_key=api_key)
         self.latex_generator = LaTeXGenerator()
     
-    def process_resume(self, resume_path: str, job_description: str, output_path: str = "updated_resume.tex", compile_pdf: bool = True):
+    def process_resume(self, resume_path: str, job_description: str, output_path: str = "updated_resume.tex"):
         """
         Main processing pipeline
         
@@ -45,7 +45,7 @@ class ResumeUpdater:
         print()
         
         # Step 1: Extract text from resume
-        print("Step 1/5: Extracting text from resume...")
+        print("Step 1/4: Extracting text from resume...")
         resume_path_obj = Path(resume_path)
         
         if resume_path_obj.suffix.lower() == '.pdf':
@@ -57,59 +57,39 @@ class ResumeUpdater:
         print()
         
         # Step 2: Transform resume content (Stage 1 LLM call)
-        print("Step 2/5: Transforming resume content to match job description...")
+        print("Step 2/4: Transforming resume content to match job description...")
         print("   (This may take 30-60 seconds...)")
         transformed_content = self.llm_service.transform_resume_content(resume_text, job_description)
         print(f"✅ Resume content transformed ({len(transformed_content)} characters)")
         print()
         
         # Step 3: Get LaTeX template
-        print("Step 3/5: Loading LaTeX template...")
+        print("Step 3/4: Loading LaTeX template...")
         latex_template = self.latex_generator.get_default_template()
         print("✅ LaTeX template loaded")
         print()
         
         # Step 4: Format to LaTeX (Stage 2 LLM call)
-        print("Step 4/5: Formatting content into LaTeX structure...")
+        print("Step 4/4: Formatting content into LaTeX structure...")
         print("   (This may take 30-60 seconds...)")
         final_latex = self.llm_service.format_to_latex(transformed_content, latex_template)
         print("✅ Content formatted into LaTeX")
         print()
         
-        # Step 5: Save LaTeX output
-        print(f"Step 5/5: Saving LaTeX file to: {output_path}")
+        # Save LaTeX output
+        print(f"Saving LaTeX file to: {output_path}")
         saved_path = self.latex_generator.save_latex_output(final_latex, output_path)
         print(f"✅ LaTeX file saved successfully!")
         print()
-        
-        pdf_path = None
-        
-        # Step 6: Compile to PDF (optional)
-        if compile_pdf:
-            print("📄 Compiling LaTeX to PDF...")
-            try:
-                success, pdf_path = self.latex_generator.compile_to_pdf(saved_path, cleanup=True)
-                if success and pdf_path:
-                    print(f"✅ PDF generated successfully!")
-                    print(f"📄 PDF file: {pdf_path}")
-                else:
-                    print(f"⚠️  PDF compilation completed with warnings. Check LaTeX output.")
-            except Exception as e:
-                print(f"⚠️  PDF compilation failed: {str(e)}")
-                print(f"   You can manually compile with: pdflatex {saved_path}")
-            print()
-        
+
         # Final summary
         print("=" * 60)
         print("✨ Transformation Complete!")
         print(f"📝 LaTeX file: {saved_path}")
-        if pdf_path:
-            print(f"📄 PDF file: {pdf_path}")
-        else:
-            print(f"📄 PDF: Not generated (use --no-pdf to skip, or compile manually)")
+        print("📄 PDF: Not generated automatically. To convert, run `pdflatex updated_resume.tex` (requires a LaTeX distribution).")
         print("=" * 60)
         
-        return saved_path, pdf_path
+        return saved_path, None
 
 
 def main():
@@ -119,20 +99,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Using OpenAI (default) - automatically compiles to PDF
   python main.py resume.pdf "Job description text here"
-  
-  # Using Google Gemini
   python main.py resume.pdf "Job description text here" --provider gemini
-  
-  # With custom output path
-  python main.py resume.pdf "Job description text here" -o custom_resume.tex
-  
-  # With job description from file
-  python main.py resume.pdf -j job_description.txt
-  
-  # Skip PDF compilation (only generate LaTeX)
-  python main.py resume.pdf "Job description" --no-pdf
+  python main.py resume.pdf -j job_description.txt -o custom_resume.tex
         """
     )
     
@@ -176,12 +145,6 @@ Examples:
         help="API key for LLM provider (or set environment variable)"
     )
     
-    parser.add_argument(
-        "--no-pdf",
-        action="store_true",
-        help="Skip PDF compilation (only generate LaTeX file)"
-    )
-    
     args = parser.parse_args()
     
     # Get job description
@@ -208,8 +171,7 @@ Examples:
         updater.process_resume(
             args.resume, 
             job_description, 
-            args.output,
-            compile_pdf=not args.no_pdf
+            args.output
         )
     except Exception as e:
         print(f"❌ Error: {str(e)}")

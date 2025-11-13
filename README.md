@@ -8,8 +8,7 @@ Transform your resume to perfectly match any job description using AI-powered st
 - **📄 PDF Resume Extraction**: Automatically extracts text from PDF resumes
 - **🤖 AI-Powered Transformation**: Uses OpenAI, Google Gemini, or Groq to rewrite your resume
 - **🎯 Job Description Matching**: Analyzes job requirements and aligns your experience accordingly
-- **📝 LaTeX Output**: Generates professional LaTeX-formatted resumes
-- **📄 Automatic PDF Compilation**: Automatically compiles LaTeX to PDF using pdflatex
+- **📝 LaTeX Output**: Generates professional LaTeX-formatted resumes ready for manual PDF compilation
 - **⚙️ Flexible API Options**: Choose between OpenAI, Gemini, or Groq (auto-detects from API key)
 - **📊 Progress Tracking**: Real-time progress bars showing transformation stages
 - **🔁 Iterative Refinement**: Offer up to 5 follow-up feedback turns to fine-tune the resume
@@ -76,7 +75,7 @@ python build_exe.py
 2. **Upload/Paste Job Description**: Right side - text or PDF file
 3. **Enter API Key**: Sidebar - auto-detects provider
 4. **Click "Transform Resume"**: Wait 1-2 minutes
-5. **Download**: Get LaTeX (.tex) and PDF files
+5. **Download**: Get LaTeX (`updated_resume.tex`) and compile to PDF manually if needed
 6. **Refine (Optional)**: Provide follow-up feedback up to 5 times for additional tweaks
 
 ## 🛠️ Project Structure
